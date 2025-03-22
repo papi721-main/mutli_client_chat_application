@@ -80,6 +80,29 @@ def client_handler(client: socket):
     ).start()
 
 
+def shutdown_server():
+    """Handles server shutdown and disconnects all clients"""
+    global active_clients, server
+
+    print("server ~ Closing all client connections...")
+    for username, client in active_clients:
+        try:
+            client.sendall("server ~ Server is shutting down.".encode("utf-8"))
+            client.close()
+        except Exception as e:
+            print(f"server ~ Error closing client {username}: {e}")
+
+    active_clients.clear()  # Remove all clients from the list
+
+    try:
+        server.close()
+        print("server ~ Server socket closed.")
+    except Exception as e:
+        print(f"server ~ Error closing server socket: {e}")
+
+    sys.exit(0)  # Exit the program cleanly
+
+
 def main():
     """Server main function"""
     global server  # Declare server as global so we can close it in signal handler
@@ -106,29 +129,6 @@ def main():
     except KeyboardInterrupt:
         print("\nserver ~ Shutting down gracefully...")
         shutdown_server()
-
-
-def shutdown_server():
-    """Handles server shutdown and disconnects all clients"""
-    global active_clients, server
-
-    print("server ~ Closing all client connections...")
-    for username, client in active_clients:
-        try:
-            client.sendall("server ~ Server is shutting down.".encode("utf-8"))
-            client.close()
-        except Exception as e:
-            print(f"server ~ Error closing client {username}: {e}")
-
-    active_clients.clear()  # Remove all clients from the list
-
-    try:
-        server.close()
-        print("server ~ Server socket closed.")
-    except Exception as e:
-        print(f"server ~ Error closing server socket: {e}")
-
-    sys.exit(0)  # Exit the program cleanly
 
 
 # Handle Ctrl+C shutdown
