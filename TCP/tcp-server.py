@@ -2,7 +2,7 @@
 """TCP Sever Script"""
 
 import threading
-from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket
+from socket import AF_INET, SOCK_STREAM, socket
 
 SERVER_IP = "127.0.0.1"  # Standard loopback interface address (localhost)
 SERVER_PORT = 65432  # Port to listen on, any non-privileged port > 1023 will do
@@ -21,8 +21,8 @@ def listen_for_messages(client: socket, username: str):
         message = client.recv(2048).decode("utf-8")
         if message != "":
             # Craft the final message displayed and send that to all clients
-            final_message = f"[{username}] ~ {message}"
-            send_message_to_all(final_message)
+            prompt_message = f"{username} ~ {message}"
+            send_message_to_all(prompt_message)
         else:
             print(f"The message sent from the client {username} is empty")
 
@@ -48,10 +48,10 @@ def client_handler(client: socket):
         username = client.recv(2048).decode("utf-8")
         if username != "":
             active_clients.append((username, client))
-            send_message_to_all(f"[SERVER] ~ {username} has joined")
+            send_message_to_all(f"server ~ {username} has joined")
             break
         else:
-            print("[SERVER] ~ client username is empty")
+            print("server ~ client username is empty")
 
     threading.Thread(
         target=listen_for_messages,
@@ -72,10 +72,10 @@ def main():
     # Bind the server with a host ip address and port number
     try:
         server.bind((SERVER_IP, SERVER_PORT))
-        print(f"[SERVER] ~ Running the server @{SERVER_IP}:{SERVER_PORT}")
+        print(f"server ~ Running the server @{SERVER_IP}:{SERVER_PORT}")
     except Exception as e:
-        print(f"[SERVER] ~ Unable to bind server @{SERVER_IP}:{SERVER_PORT}")
-        print(f"[SERVER] ~ {e}")
+        print(f"server ~ Unable to bind server @{SERVER_IP}:{SERVER_PORT}")
+        print(f"server ~ {e}")
 
     # Set server limit
     server.listen(LISTENER_LIMIT)
@@ -86,7 +86,7 @@ def main():
         # server.accept() blocks execution and waits for incoming connections
         client, address = server.accept()
         # server.sendall(f"{address[0]}:{address[1]}".encode("utf-8"))
-        print(f"Server ~ Successfully connected to client @{address[0]}:{address[1]}")
+        print(f"server ~ Successfully connected to client @{address[0]}:{address[1]}")
 
         threading.Thread(target=client_handler, args=(client,)).start()
 

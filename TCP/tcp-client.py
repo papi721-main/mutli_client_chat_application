@@ -2,7 +2,7 @@
 """TCP Client Script"""
 import threading
 import tkinter as tk
-from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket
+from socket import AF_INET, SOCK_STREAM, socket
 from tkinter import messagebox, scrolledtext
 
 # GUI constants
