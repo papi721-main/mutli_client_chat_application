@@ -2,7 +2,7 @@
 """TCP Client Script"""
 import threading
 import tkinter as tk
-from socket import AF_INET, SOCK_STREAM, socket
+from socket import AF_INET, SOCK_STREAM, socket, timeout
 from tkinter import messagebox, scrolledtext
 
 # GUI constants
@@ -20,6 +20,9 @@ SERVER_PORT = 65432
 
 # Create the client socket object
 client = socket(AF_INET, SOCK_STREAM)
+client.settimeout(1)  # Set timeout to prevent blocking
+
+stop_threads = False  # Global flag to stop threads
 
 
 def add_message(message: str):
@@ -33,11 +36,12 @@ def add_message(message: str):
 def connect_to_server():
     """Function to connect with the server"""
 
+    global stop_threads
+    stop_threads = False  # Reset flag in case of reconnection
+
     try:
         print("Trying to connect")
-        # Connect to the server
         client.connect((SERVER_IP, SERVER_PORT))
-        # client_address = client.recv(2048).decode("utf-8")
         print("Successfully connected to the server")
         add_message("[SERVER] Successfully connected to the server")
     except Exception as e:
@@ -45,20 +49,17 @@ def connect_to_server():
             title="Connection Error",
             message=f"Unable to connect to server at {SERVER_IP}:{SERVER_PORT}\n\n{e}",
         )
+        return
 
     username = username_textbox.get()
-    print(username + " recieved")
-    if username != "":
-        client.sendall(username.encode("utf-8"))  # Send the username to the server
-        # main_window.title(f"{username} @{client_address}")
+    if username:
+        client.sendall(username.encode("utf-8"))
         main_window.title(f"{username}")
     else:
-        messagebox.showerror(
-            title="Invalid username",
-            message=f"Username cannot be empty",
-        )
+        messagebox.showerror(title="Invalid username", message="Username cannot be empty")
+        return
 
-    threading.Thread(target=listen_for_messages_from_server, args=(client,)).start()
+    threading.Thread(target=listen_for_messages_from_server, daemon=True).start()
 
     username_textbox.config(state=tk.DISABLED)
     username_button.config(state=tk.DISABLED)
@@ -68,48 +69,63 @@ def send_message():
     """Function for sending messages in the GUI"""
 
     message = message_textbox.get()
-    print(message)
-    if message != "":
-        client.sendall(message.encode("utf-8"))
-        message_textbox.delete(0, len(message))
-        print(message + " is sent")
+    if message:
+        try:
+            client.sendall(message.encode("utf-8"))
+            message_textbox.delete(0, tk.END)
+        except Exception as e:
+            messagebox.showerror(title="Error", message=f"Failed to send message: {e}")
     else:
         messagebox.showerror(title="Empty message", message="Message cannot be empty")
 
 
-def listen_for_messages_from_server(client: socket):
+def listen_for_messages_from_server():
     """Function to listen for messages from the server"""
 
-    while True:
-        message = client.recv(2048).decode("utf-8")
-        if message != "":
-            # username = message.split(" ~ ")[0]
-            # content = message.split(" ~ ")[1]
-            add_message(message)
-        else:
-            messagebox.showerror(title="Error", message="Message recevied from client is empty")
+    global stop_threads
+    while not stop_threads:
+        try:
+            message = client.recv(2048).decode("utf-8")
+            if message:
+                add_message(message)
+        except timeout:
+            continue  # Prevent blocking when stopping threads
+        except Exception:
+            break  # Exit thread when socket is closed
+
+
+def on_closing():
+    """Handle window closing event."""
+
+    global stop_threads
+    stop_threads = True  # Stop the listening thread
+
+    try:
+        client.shutdown(2)  # Shut down both send and receive operations
+        client.close()  # Close the socket connection
+    except Exception as e:
+        print(f"Error closing socket: {e}")
+
+    main_window.destroy()  # Close the Tkinter window
 
 
 # Build the GUI
-main_window = tk.Tk()  # Get a Tkinter window object
-main_window.geometry("600x600")  # Set the size of the Tkinter window
-main_window.title("Messenger Client")  # Set the title of the window
-main_window.resizable(False, False)  # Disable window resizing for width and height
+main_window = tk.Tk()
+main_window.geometry("600x600")
+main_window.title("Messenger Client")
+main_window.resizable(False, False)
 
-# Create the top, middle and bottom frames
+# Bind the close event
+main_window.protocol("WM_DELETE_WINDOW", on_closing)
+
+# Create the GUI layout
 top_frame = tk.Frame(main_window, width=600, height=100, bg=DARK_GREY)
 middle_frame = tk.Frame(main_window, width=600, height=400, bg=MEDIUM_GREY)
 bottom_frame = tk.Frame(main_window, width=600, height=100, bg=DARK_GREY)
 
-# Position the frames
 top_frame.grid(row=0, column=0, sticky=tk.NSEW)
 middle_frame.grid(row=1, column=0, sticky=tk.NSEW)
 bottom_frame.grid(row=2, column=0, sticky=tk.NSEW)
-
-# Adjust the height of the frames
-main_window.grid_rowconfigure(0, weight=1)  # Top frame
-main_window.grid_rowconfigure(1, weight=4)  # Middle Frame
-main_window.grid_rowconfigure(2, weight=1)  # Bottom Frame
 
 username_label = tk.Label(top_frame, text="Enter username:", font=FONT, bg=DARK_GREY, fg=WHITE)
 username_label.pack(side=tk.LEFT, padx=10)
@@ -136,14 +152,5 @@ message_box = scrolledtext.ScrolledText(
 message_box.config(state=tk.DISABLED)
 message_box.pack(side=tk.TOP)
 
-
-# Main Program Function
-def main():
-    """Client main function"""
-
-    # Start the client GUI
-    main_window.mainloop()
-
-
-if __name__ == "__main__":
-    main()
+# Run the Tkinter main loop
+main_window.mainloop()

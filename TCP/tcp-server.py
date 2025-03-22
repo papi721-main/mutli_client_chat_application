@@ -14,17 +14,35 @@ active_clients = []  # List of all connected users with the format (username, cl
 # and port number
 
 
-def listen_for_messages(client: socket, username: str):
-    """Function to listen for upcoming messages from a client"""
+def remove_client(client: socket, username: str):
+    """Remove a disconnected client from active_clients"""
+    global active_clients
+    active_clients = [(user, conn) for user, conn in active_clients if conn != client]
 
+    try:
+        client.close()
+    except Exception as e:
+        print(f"server ~ Error closing client socket: {e}")
+
+    send_message_to_all(f"server ~ {username} has left the chat.")
+
+
+def listen_for_messages(client: socket, username: str):
+    """Function to listen for incoming messages from a client"""
     while True:
-        message = client.recv(2048).decode("utf-8")
-        if message != "":
-            # Craft the final message displayed and send that to all clients
-            prompt_message = f"{username} ~ {message}"
-            send_message_to_all(prompt_message)
-        else:
-            print(f"The message sent from the client {username} is empty")
+        try:
+            message = client.recv(2048).decode("utf-8")
+            if message:
+                prompt_message = f"{username} ~ {message}"
+                send_message_to_all(prompt_message)
+            else:
+                print(f"server ~ {username} has disconnected.")
+                remove_client(client, username)
+                break
+        except Exception:
+            print(f"server ~ Connection lost with {username}.")
+            remove_client(client, username)
+            break
 
 
 def send_message_to_client(client: socket, message: str):
@@ -43,7 +61,6 @@ def client_handler(client: socket):
     """Function to handle client connections"""
 
     while True:
-        print("I am at  client_handler")
         # Server will listen for client message that will contain the username
         username = client.recv(2048).decode("utf-8")
         if username != "":
