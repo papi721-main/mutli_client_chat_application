@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 """TCP Sever Script"""
 
+import signal
+import sys
 import threading
 from socket import AF_INET, SOCK_STREAM, socket
 
@@ -10,8 +12,7 @@ LISTENER_LIMIT = 5  # Number of clients to litsen to concurrently
 active_clients = []  # List of all connected users with the format (username, client)
 
 # NOTE:
-# Any client wanting to connect to this server must use the above IP address
-# and port number
+# Any client wanting to connect to this server must use the above IP address and port number
 
 
 def remove_client(client: socket, username: str):
@@ -81,32 +82,57 @@ def client_handler(client: socket):
 
 def main():
     """Server main function"""
+    global server  # Declare server as global so we can close it in signal handler
 
-    # AF_INET = Internet Address family for IPv4
-    # SOCK_STREAM = socket type for TCP connection
     server = socket(AF_INET, SOCK_STREAM)
 
-    # Bind the server with a host ip address and port number
     try:
         server.bind((SERVER_IP, SERVER_PORT))
         print(f"server ~ Running the server @{SERVER_IP}:{SERVER_PORT}")
     except Exception as e:
         print(f"server ~ Unable to bind server @{SERVER_IP}:{SERVER_PORT}")
         print(f"server ~ {e}")
+        sys.exit(1)  # Exit if binding fails
 
-    # Set server limit
     server.listen(LISTENER_LIMIT)
 
-    # Now this while loop makes sure the server keeps on listening for a
-    # client connection request
-    while True:
-        # server.accept() blocks execution and waits for incoming connections
-        client, address = server.accept()
-        # server.sendall(f"{address[0]}:{address[1]}".encode("utf-8"))
-        print(f"server ~ Successfully connected to client @{address[0]}:{address[1]}")
+    print("server ~ Waiting for connections... (Press Ctrl+C to stop)")
 
-        threading.Thread(target=client_handler, args=(client,)).start()
+    try:
+        while True:
+            client, address = server.accept()
+            print(f"server ~ Successfully connected to client @{address[0]}:{address[1]}")
+            threading.Thread(target=client_handler, args=(client,)).start()
+    except KeyboardInterrupt:
+        print("\nserver ~ Shutting down gracefully...")
+        shutdown_server()
 
+
+def shutdown_server():
+    """Handles server shutdown and disconnects all clients"""
+    global active_clients, server
+
+    print("server ~ Closing all client connections...")
+    for username, client in active_clients:
+        try:
+            client.sendall("server ~ Server is shutting down.".encode("utf-8"))
+            client.close()
+        except Exception as e:
+            print(f"server ~ Error closing client {username}: {e}")
+
+    active_clients.clear()  # Remove all clients from the list
+
+    try:
+        server.close()
+        print("server ~ Server socket closed.")
+    except Exception as e:
+        print(f"server ~ Error closing server socket: {e}")
+
+    sys.exit(0)  # Exit the program cleanly
+
+
+# Handle Ctrl+C shutdown
+signal.signal(signal.SIGINT, lambda sig, frame: shutdown_server())
 
 if __name__ == "__main__":
     main()
