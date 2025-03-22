@@ -1,8 +1,22 @@
 #!/usr/bin/python3
 """TCP Client Script"""
 import threading
+import tkinter as tk
 from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket
 
+root = tk.Tk()  # Get a Tkinter window object
+root.geometry("600x600")  # Set the size of the Tkinter window
+root.title("Messenger Client")  # Set the title of the window
+root.resizable(False, False)  # Disable window resizablity for width and height
+
+# GUI constants
+DARK_GREY = "#121212"
+MEDIUM_GREY = "#1F1B24"
+OCEAN_BLUE = "#464EB8"
+FONT = ("Helvetica", 17)
+SMALL_FONT = ("Helvetica", 13)
+
+# Socket constants
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 65432
 
@@ -49,6 +63,9 @@ def communicate_to_server(client: socket):
 
 def main():
     """Client main function"""
+
+    # Start the tkinter GUI window
+    root.mainloop()
 
     with socket(AF_INET, SOCK_STREAM) as client:
 
