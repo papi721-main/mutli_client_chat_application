@@ -167,5 +167,7 @@ message_box = scrolledtext.ScrolledText(
 message_box.config(state=tk.DISABLED)
 message_box.pack(side=tk.TOP)
 
-# Run the Tkinter main loop
-main_window.mainloop()
+
+if __name__ == "__main__":
+    # Run the Tkinter main loop
+    main_window.mainloop()
