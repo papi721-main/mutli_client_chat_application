@@ -1,5 +1,22 @@
 #!/usr/bin/python3
-"""TCP Client Script"""
+"""TCP Client Script
+
+---------------------------------------------
+                HiLCoE
+School of Computer Science and Technology
+   CS662 - Advanced Computer Networks
+---------------------------------------------
+
+
+Group 7 Members:
+   - Aman Fissehaye
+   - Bethlehem Zebenay
+   - Binyam Yeshitila
+   - Eyob Melkamu
+   - Orion Daniel
+   - Tatek Habtegiorgis
+
+"""
 import threading
 import tkinter as tk
 from socket import AF_INET, SOCK_STREAM, socket, timeout
