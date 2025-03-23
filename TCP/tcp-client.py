@@ -57,9 +57,7 @@ def connect_to_server():
     stop_threads = False  # Reset flag in case of reconnection
 
     try:
-        print("Trying to connect")
         client.connect((SERVER_IP, SERVER_PORT))
-        print("Successfully connected to the server")
         display_message("server ~ Successfully connected to the server")
     except Exception as e:
         messagebox.showerror(
