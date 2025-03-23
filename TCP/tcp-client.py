@@ -42,7 +42,7 @@ client.settimeout(1)  # Set timeout to prevent blocking
 stop_threads = False  # Global flag to stop threads
 
 
-def add_message(message: str):
+def display_message(message: str):
     """Function to write messages on the GUI"""
 
     message_box.config(state=tk.NORMAL)
@@ -60,7 +60,7 @@ def connect_to_server():
         print("Trying to connect")
         client.connect((SERVER_IP, SERVER_PORT))
         print("Successfully connected to the server")
-        add_message("[SERVER] Successfully connected to the server")
+        display_message("server ~ Successfully connected to the server")
     except Exception as e:
         messagebox.showerror(
             title="Connection Error",
@@ -104,7 +104,7 @@ def listen_for_messages_from_server():
         try:
             message = client.recv(2048).decode("utf-8")
             if message:
-                add_message(message)
+                display_message(message)
         except timeout:
             continue  # Prevent blocking when stopping threads
         except Exception:
